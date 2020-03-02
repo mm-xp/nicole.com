@@ -1,0 +1,52 @@
+version: '3.6'
+
+services:
+  nginx:
+    build: docker/nginx 
+    container_name: ${CONTAINER_NAME:-me.com} 
+    networks:
+      - code-network
+    ports:
+      - '80:80'
+      - '443:443'
+    restart: always
+    volumes:
+      # Public Dir
+      - ${WWW_DIR:-./www}:/www
+
+      # Config our site for the NGINX server
+      - ${NGINX_CONF:-./docker/nginx/.conf}:/etc/nginx/conf.d/site.conf
+
+      # Show Logs in host dir
+      - ${NGINX_LOG_DIR:-./logs/nginx}:/var/log/nginx
+  php:
+    build: docker/php
+    networks:
+      - code-network
+    volumes:
+      # Public Dir
+      - ${WWW_DIR:-./www}:/www
+  db:
+    image: mariadb:${MARIADB_VERSION:-latest}
+    # volumes:
+    #   - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-password}
+      - MYSQL_USER=${DB_USER:-root}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-password}
+      - MYSQL_DATABASE=${DB_DATABASE:-wordpress}
+    restart: always
+    networks:
+      - code-network
+
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - code-network
+    ports:
+      - 8080:8080
+
+networks:
+  code-network:
+    driver: bridge
